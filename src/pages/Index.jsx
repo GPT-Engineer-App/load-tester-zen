@@ -84,6 +84,73 @@ const CatFactTicker = ({ facts }) => {
   );
 };
 
+const catFacts = [
+  "Cats sleep for about 70% of their lives.",
+  "A group of cats is called a clowder.",
+  "Cats have over 20 vocalizations, including the purr, meow, and chirp.",
+  "The first cat in space was a French cat named Felicette in 1963.",
+  "Cats can jump up to six times their length.",
+];
+
+const CatBreedCard = ({ breed }) => {
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  return (
+    <motion.div
+      className="mb-4 h-[300px] perspective-1000"
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={() => setIsFlipped(!isFlipped)}
+    >
+      <motion.div
+        className="w-full h-full relative transition-transform duration-500 transform-style-3d"
+        animate={{ rotateY: isFlipped ? 180 : 0 }}
+      >
+        <div className="absolute w-full h-full backface-hidden">
+          <Card className="h-full overflow-hidden">
+            <img src={breed.image} alt={breed.name} className="w-full h-48 object-cover" />
+            <CardHeader>
+              <CardTitle>{breed.name}</CardTitle>
+              <CardDescription>Origin: {breed.origin}</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+        <div className="absolute w-full h-full backface-hidden rotate-y-180">
+          <Card className="h-full overflow-hidden flex flex-col justify-center items-center p-4">
+            <CardTitle className="mb-4">{breed.name}</CardTitle>
+            <p className="text-center"><strong>Temperament:</strong> {breed.temperament}</p>
+          </Card>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+const CatFactTicker = ({ facts }) => {
+  const [currentFact, setCurrentFact] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentFact((prev) => (prev + 1) % facts.length);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [facts]);
+
+  return (
+    <div className="bg-purple-800 text-white p-2 overflow-hidden">
+      <motion.div
+        key={currentFact}
+        initial={{ x: "100%" }}
+        animate={{ x: "-100%" }}
+        transition={{ duration: 10, ease: "linear" }}
+        className="whitespace-nowrap"
+      >
+        {facts[currentFact]}
+      </motion.div>
+    </div>
+  );
+};
+
 const Index = () => {
   const [likes, setLikes] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(false);
