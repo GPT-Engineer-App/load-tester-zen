@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Cat, Heart, Info, Paw, Moon, Sun, ChevronRight } from "lucide-react";
+import { Cat, Heart, Info, Paw, Moon, Sun, ChevronRight, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { useToast } from "@/components/ui/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const catBreeds = [
   { name: "Siamese", origin: "Thailand", temperament: "Vocal, Intelligent, Social", image: "https://upload.wikimedia.org/wikipedia/commons/2/25/Siam_lilacpoint.jpg" },
@@ -154,6 +157,7 @@ const CatFactTicker = ({ facts }) => {
 const Index = () => {
   const [likes, setLikes] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [catName, setCatName] = useState("");
   const { toast } = useToast();
   const headerRef = useRef(null);
   const { scrollY } = useScroll();
@@ -169,7 +173,7 @@ const Index = () => {
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-b from-gray-900 to-purple-900 text-white' : 'bg-gradient-to-b from-purple-100 to-pink-100'} transition-colors duration-500 cursor-paw`}>
       <CatFactTicker facts={catFacts} />
-      <div className="max-w-4xl mx-auto p-8">
+      <div className="max-w-6xl mx-auto p-8">
         <motion.div 
           ref={headerRef}
           style={{ y: headerY }}
@@ -183,24 +187,59 @@ const Index = () => {
           >
             <Cat className="mr-2 text-pink-500" /> Feline Fascination
           </motion.h1>
-          <motion.div
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            <Button variant="outline" size="icon" onClick={toggleDarkMode}>
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={isDarkMode ? "moon" : "sun"}
-                  initial={{ y: -20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 20, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {isDarkMode ? <Moon className="h-[1.2rem] w-[1.2rem]" /> : <Sun className="h-[1.2rem] w-[1.2rem]" />}
-                </motion.div>
-              </AnimatePresence>
-            </Button>
-          </motion.div>
+          <div className="flex items-center space-x-4">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">Name Your Cat</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Name Your Virtual Cat</DialogTitle>
+                  <DialogDescription>
+                    Give your virtual feline friend a purr-fect name!
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">
+                      Name
+                    </Label>
+                    <Input
+                      id="name"
+                      value={catName}
+                      onChange={(e) => setCatName(e.target.value)}
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+                <DialogTrigger asChild>
+                  <Button type="submit" onClick={() => toast({
+                    title: "Cat Named!",
+                    description: `Your virtual cat is now named ${catName}!`,
+                    icon: <Cat className="h-5 w-5 text-purple-500" />,
+                  })}>Name Cat</Button>
+                </DialogTrigger>
+              </DialogContent>
+            </Dialog>
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <Button variant="outline" size="icon" onClick={toggleDarkMode}>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={isDarkMode ? "moon" : "sun"}
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 20, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {isDarkMode ? <Moon className="h-[1.2rem] w-[1.2rem]" /> : <Sun className="h-[1.2rem] w-[1.2rem]" />}
+                  </motion.div>
+                </AnimatePresence>
+              </Button>
+            </motion.div>
+          </div>
         </motion.div>
         
         <Carousel className="mb-8">
@@ -275,7 +314,7 @@ const Index = () => {
             </Card>
           </TabsContent>
           <TabsContent value="breeds">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {catBreeds.map((breed) => (
                 <CatBreedCard key={breed.name} breed={breed} />
               ))}
@@ -317,6 +356,25 @@ const Index = () => {
             </TooltipProvider>
           </CardContent>
         </Card>
+
+        <motion.div
+          className="mt-8 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          <h2 className="text-2xl font-bold mb-4">Want to learn more about cats?</h2>
+          <Button
+            as="a"
+            href="https://en.wikipedia.org/wiki/Cat"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group"
+          >
+            Explore Cat Wiki
+            <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </motion.div>
       </div>
     </div>
   );
