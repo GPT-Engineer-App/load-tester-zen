@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
-import { Cat, Heart, Info, Paw, Moon, Sun } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { Cat, Heart, Info, Paw, Moon, Sun, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { useToast } from "@/components/ui/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const catBreeds = [
   { name: "Siamese", origin: "Thailand", temperament: "Vocal, Intelligent, Social", image: "https://upload.wikimedia.org/wikipedia/commons/2/25/Siam_lilacpoint.jpg" },
@@ -24,46 +25,89 @@ const catFacts = [
   "Cats can jump up to six times their length.",
 ];
 
-const CatBreedCard = ({ breed }) => (
-  <motion.div
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-  >
-    <Card className="mb-4 overflow-hidden">
-      <img src={breed.image} alt={breed.name} className="w-full h-48 object-cover" />
-      <CardHeader>
-        <CardTitle>{breed.name}</CardTitle>
-        <CardDescription>Origin: {breed.origin}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p><strong>Temperament:</strong> {breed.temperament}</p>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
+const CatBreedCard = ({ breed }) => {
+  const [isFlipped, setIsFlipped] = useState(false);
 
-const Index = () => {
-  const [likes, setLikes] = useState(0);
+  return (
+    <motion.div
+      className="mb-4 h-[300px] perspective-1000"
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={() => setIsFlipped(!isFlipped)}
+    >
+      <motion.div
+        className="w-full h-full relative transition-transform duration-500 transform-style-3d"
+        animate={{ rotateY: isFlipped ? 180 : 0 }}
+      >
+        <div className="absolute w-full h-full backface-hidden">
+          <Card className="h-full overflow-hidden">
+            <img src={breed.image} alt={breed.name} className="w-full h-48 object-cover" />
+            <CardHeader>
+              <CardTitle>{breed.name}</CardTitle>
+              <CardDescription>Origin: {breed.origin}</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+        <div className="absolute w-full h-full backface-hidden rotate-y-180">
+          <Card className="h-full overflow-hidden flex flex-col justify-center items-center p-4">
+            <CardTitle className="mb-4">{breed.name}</CardTitle>
+            <p className="text-center"><strong>Temperament:</strong> {breed.temperament}</p>
+          </Card>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+const CatFactTicker = ({ facts }) => {
   const [currentFact, setCurrentFact] = useState(0);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentFact((prev) => (prev + 1) % catFacts.length);
-    }, 5000);
+      setCurrentFact((prev) => (prev + 1) % facts.length);
+    }, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [facts]);
+
+  return (
+    <div className="bg-purple-800 text-white p-2 overflow-hidden">
+      <motion.div
+        key={currentFact}
+        initial={{ x: "100%" }}
+        animate={{ x: "-100%" }}
+        transition={{ duration: 10, ease: "linear" }}
+        className="whitespace-nowrap"
+      >
+        {facts[currentFact]}
+      </motion.div>
+    </div>
+  );
+};
+
+const Index = () => {
+  const [likes, setLikes] = useState(0);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { toast } = useToast();
+  const headerRef = useRef(null);
+  const { scrollY } = useScroll();
+  const headerY = useTransform(scrollY, [0, 300], [0, -150]);
 
   const toggleDarkMode = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
   };
 
+  const catOfTheDay = catBreeds[Math.floor(Math.random() * catBreeds.length)];
+
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-b from-gray-900 to-purple-900 text-white' : 'bg-gradient-to-b from-purple-100 to-pink-100'} p-8 transition-colors duration-500`}>
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-b from-gray-900 to-purple-900 text-white' : 'bg-gradient-to-b from-purple-100 to-pink-100'} transition-colors duration-500 cursor-paw`}>
+      <CatFactTicker facts={catFacts} />
+      <div className="max-w-4xl mx-auto p-8">
+        <motion.div 
+          ref={headerRef}
+          style={{ y: headerY }}
+          className="flex justify-between items-center mb-6 sticky top-0 z-10 bg-opacity-80 backdrop-blur-md p-4 rounded-lg"
+        >
           <motion.h1 
             className="text-5xl font-bold flex items-center justify-center text-purple-800 dark:text-purple-300"
             initial={{ opacity: 0, y: -50 }}
@@ -72,25 +116,49 @@ const Index = () => {
           >
             <Cat className="mr-2 text-pink-500" /> Feline Fascination
           </motion.h1>
-          <Button variant="outline" size="icon" onClick={toggleDarkMode}>
-            {isDarkMode ? <Sun className="h-[1.2rem] w-[1.2rem]" /> : <Moon className="h-[1.2rem] w-[1.2rem]" />}
-          </Button>
-        </div>
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <Button variant="outline" size="icon" onClick={toggleDarkMode}>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={isDarkMode ? "moon" : "sun"}
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 20, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {isDarkMode ? <Moon className="h-[1.2rem] w-[1.2rem]" /> : <Sun className="h-[1.2rem] w-[1.2rem]" />}
+                </motion.div>
+              </AnimatePresence>
+            </Button>
+          </motion.div>
+        </motion.div>
         
         <Carousel className="mb-8">
           <CarouselContent>
             {catBreeds.map((breed, index) => (
               <CarouselItem key={index}>
-                <div className="relative">
+                <motion.div
+                  className="relative"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
                   <img
                     src={breed.image}
                     alt={breed.name}
                     className="mx-auto object-cover w-full h-[500px] rounded-lg shadow-2xl"
                   />
-                  <div className="absolute bottom-4 left-4 bg-white bg-opacity-75 p-2 rounded-lg">
+                  <motion.div
+                    className="absolute bottom-4 left-4 bg-white bg-opacity-75 p-2 rounded-lg"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
                     <h2 className="text-2xl font-bold text-purple-800">{breed.name}</h2>
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               </CarouselItem>
             ))}
           </CarouselContent>
@@ -98,22 +166,25 @@ const Index = () => {
           <CarouselNext />
         </Carousel>
 
-        <Card className="mb-8 overflow-hidden">
-          <CardContent className="p-6">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={currentFact}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5 }}
-                className="text-xl text-center leading-relaxed"
-              >
-                {catFacts[currentFact]}
-              </motion.p>
-            </AnimatePresence>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="mb-8 overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold">Cat of the Day</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center space-x-4">
+              <img src={catOfTheDay.image} alt={catOfTheDay.name} className="w-24 h-24 rounded-full object-cover" />
+              <div>
+                <h3 className="text-xl font-semibold">{catOfTheDay.name}</h3>
+                <p>{catOfTheDay.temperament}</p>
+                <Badge variant="secondary" className="mt-2">{catOfTheDay.origin}</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         <Tabs defaultValue="characteristics" className="mb-8">
           <TabsList className="grid w-full grid-cols-2">
@@ -128,10 +199,10 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  <li className="flex items-center"><Paw className="mr-2 text-pink-500" /> Exceptional hunters with razor-sharp claws and teeth</li>
-                  <li className="flex items-center"><Paw className="mr-2 text-pink-500" /> Incredibly flexible bodies with lightning-fast reflexes</li>
-                  <li className="flex items-center"><Paw className="mr-2 text-pink-500" /> Heightened senses, particularly acute hearing and night vision</li>
-                  <li className="flex items-center"><Paw className="mr-2 text-pink-500" /> Complex communication through vocalizations, body language, and scent marking</li>
+                  <motion.li className="flex items-center" whileHover={{ scale: 1.05, originX: 0 }}><Paw className="mr-2 text-pink-500" /> Exceptional hunters with razor-sharp claws and teeth</motion.li>
+                  <motion.li className="flex items-center" whileHover={{ scale: 1.05, originX: 0 }}><Paw className="mr-2 text-pink-500" /> Incredibly flexible bodies with lightning-fast reflexes</motion.li>
+                  <motion.li className="flex items-center" whileHover={{ scale: 1.05, originX: 0 }}><Paw className="mr-2 text-pink-500" /> Heightened senses, particularly acute hearing and night vision</motion.li>
+                  <motion.li className="flex items-center" whileHover={{ scale: 1.05, originX: 0 }}><Paw className="mr-2 text-pink-500" /> Complex communication through vocalizations, body language, and scent marking</motion.li>
                 </ul>
               </CardContent>
             </Card>
@@ -152,22 +223,31 @@ const Index = () => {
               <br />
               <span className="text-sm">- Terry Pratchett</span>
             </p>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => {
-                setLikes(likes + 1);
-                toast({
-                  title: "Thanks for your love!",
-                  description: `You've liked cats ${likes + 1} times.`,
-                  icon: <Heart className="h-5 w-5 text-red-500" />,
-                });
-              }}
-              className="group"
-            >
-              <Heart className="mr-2 h-6 w-6 group-hover:text-red-500 group-hover:fill-red-500 transition-colors" />
-              Show Some Love ({likes})
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => {
+                      setLikes(likes + 1);
+                      toast({
+                        title: "Thanks for your love!",
+                        description: `You've liked cats ${likes + 1} times.`,
+                        icon: <Heart className="h-5 w-5 text-red-500" />,
+                      });
+                    }}
+                    className="group"
+                  >
+                    <Heart className="mr-2 h-6 w-6 group-hover:text-red-500 group-hover:fill-red-500 transition-colors" />
+                    Show Some Love ({likes})
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Click to show your appreciation for cats!</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </CardContent>
         </Card>
       </div>
